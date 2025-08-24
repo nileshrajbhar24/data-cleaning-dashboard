@@ -10,6 +10,12 @@ import io
 import warnings
 warnings.filterwarnings('ignore')
 
+# Initialize session state for data
+if 'cleaned_data' not in st.session_state:
+    st.session_state.cleaned_data = None
+if 'original_data' not in st.session_state:
+    st.session_state.original_data = None
+
 # Set page configuration
 st.set_page_config(
     page_title="Advanced Data Cleaning Dashboard",
@@ -18,71 +24,211 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for styling
 st.markdown("""
 <style>
+    /* Import Google Fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    /* Apply fonts to all elements */
+    * {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    
+    /* Main header styling */
     .main-header {
         font-size: 2.8rem;
-        color: #1f4e79;
+        color: #1a365d;
         text-align: center;
         margin-bottom: 2rem;
-        padding: 10px;
-        background-color: #f3f7fd;
-        border-radius: 10px;
+        padding: 25px;
+        background: linear-gradient(135deg, #ebf8ff 0%, #bee3f8 100%);
+        border-radius: 16px;
+        border-left: 6px solid #3182ce;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+        font-weight: 700;
+        font-family: 'Inter', sans-serif;
     }
+    
+    /* Sub-header styling */
     .sub-header {
-        font-size: 1.8rem;
-        color: #2e75b6;
-        margin-bottom: 1rem;
-        border-bottom: 2px solid #2e75b6;
-        padding-bottom: 0.5rem;
+        font-size: 1.9rem;
+        color: #2c5282;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.8rem;
+        border-bottom: 3px solid #3182ce;
+        font-weight: 600;
+        font-family: 'Inter', sans-serif;
+        letter-spacing: -0.02em;
     }
+    
+    /* Highlight boxes */
     .highlight {
-        background-color: #f0f2f6;
-        padding: 15px;
-        border-radius: 5px;
-        margin-bottom: 15px;
-        border-left: 4px solid #2e75b6;
+        background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+        padding: 22px;
+        border-radius: 12px;
+        margin-bottom: 22px;
+        border-left: 5px solid #4299e1;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
+        border: 1px solid #e2e8f0;
+        font-family: 'Inter', sans-serif;
     }
+    
+    /* Status colors */
     .success {
-        color: #28a745;
-        font-weight: bold;
+        color: #2f855a;
+        font-weight: 600;
+        background-color: rgba(72, 187, 120, 0.12);
+        padding: 10px 16px;
+        border-radius: 8px;
+        border-left: 4px solid #38a169;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.95rem;
     }
+    
     .warning {
-        color: #ffc107;
-        font-weight: bold;
+        color: #c05621;
+        font-weight: 600;
+        background-color: rgba(237, 137, 54, 0.12);
+        padding: 10px 16px;
+        border-radius: 8px;
+        border-left: 4px solid #ed8936;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.95rem;
     }
+    
     .danger {
-        color: #dc3545;
-        font-weight: bold;
+        color: #c53030;
+        font-weight: 600;
+        background-color: rgba(245, 101, 101, 0.12);
+        padding: 10px 16px;
+        border-radius: 8px;
+        border-left: 4px solid #f56565;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.95rem;
     }
+    
+    /* Info boxes */
     .info-box {
-        background-color: #e8f4ff;
-        padding: 15px;
-        border-radius: 5px;
-        margin: 10px 0;
+        background: linear-gradient(135deg, #ebf8ff 0%, #bee3f8 100%);
+        padding: 22px;
+        border-radius: 12px;
+        margin: 18px 0;
+        border-left: 5px solid #3182ce;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
+        font-family: 'Inter', sans-serif;
     }
+    
+    /* Metric cards */
     .financial-metric {
-        background-color: #f8f9fa;
-        padding: 12px;
-        border-radius: 5px;
-        border-left: 4px solid #2e75b6;
-        margin: 8px 0;
+        background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
+        padding: 22px;
+        border-radius: 12px;
+        margin: 15px 0;
+        border-left: 5px solid #4299e1;
+        box-shadow: 0 5px 10px rgba(0, 0, 0, 0.07);
+        transition: all 0.3s ease;
+        border: 1px solid #e2e8f0;
+        font-family: 'Inter', sans-serif;
     }
+    
+    .financial-metric:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+    }
+    
+    /* Button styling */
     .stButton button {
-        background-color: #2e75b6;
+        background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%);
         color: white;
-        font-weight: bold;
-        border-radius: 5px;
-        padding: 0.5rem 1rem;
+        font-weight: 600;
+        border-radius: 10px;
+        padding: 0.85rem 1.7rem;
         border: none;
         width: 100%;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        font-family: 'Inter', sans-serif;
+        font-size: 1rem;
+        letter-spacing: 0.02em;
     }
+    
     .stButton button:hover {
-        background-color: #1e4e7a;
+        background: linear-gradient(135deg, #2c5282 0%, #2a4365 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Streamlit specific overrides */
+    .stApp {
+        background-color: #f8fafc;
+    }
+    
+    .sidebar .sidebar-content {
+        background: linear-gradient(180deg, #f7fafc 0%, #edf2f7 100%);
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.08);
+    }
+    
+    /* File uploader styling */
+    .stFileUploader {
+        border: 2px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 25px;
+        background: #f7fafc;
+        transition: all 0.3s ease;
+    }
+    
+    .stFileUploader:hover {
+        border-color: #4299e1;
+        background: #ebf8ff;
+    }
+    
+    /* Dataframe styling */
+    .dataframe {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+        font-family: 'Inter', sans-serif;
+    }
+    
+    .dataframe thead th {
+        background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%);
+        color: white;
+        font-weight: 600;
+        padding: 14px;
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Custom badge styling */
+    .custom-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin: 0 5px;
+        font-family: 'Inter', sans-serif;
+    }
+    
+    .badge-primary {
+        background-color: rgba(49, 130, 206, 0.15);
+        color: #3182ce;
+        border: 1px solid rgba(49, 130, 206, 0.3);
+    }
+    
+    .badge-success {
+        background-color: rgba(72, 187, 120, 0.15);
+        color: #48bb78;
+        border: 1px solid rgba(72, 187, 120, 0.3);
+    }
+    
+    .badge-warning {
+        background-color: rgba(237, 137, 54, 0.15);
+        color: #ed8936;
+        border: 1px solid rgba(237, 137, 54, 0.3);
     }
 </style>
 """, unsafe_allow_html=True)
+
 
 # Main app
 st.markdown('<h1 class="main-header">🧾 Advanced Data Cleaning & Analysis Dashboard</h1>', unsafe_allow_html=True)
@@ -90,6 +236,36 @@ st.markdown('<h1 class="main-header">🧾 Advanced Data Cleaning & Analysis Dash
 # Sidebar for navigation
 st.sidebar.title("Navigation")
 st.sidebar.markdown("---")
+
+def clean_duplicate_columns(df):
+    """Rename duplicate columns to make them unique"""
+    cols = pd.Series(df.columns)
+    for dup in cols[cols.duplicated()].unique():
+        cols[cols[cols == dup].index.values.tolist()] = [
+            f'{dup}_{i}' if i != 0 else dup for i in range(sum(cols == dup))
+        ]
+    df.columns = cols
+    return df
+
+def handle_file_upload(uploaded_file):
+    """Handle file upload with proper error handling for duplicate columns"""
+    try:
+        if uploaded_file.name.endswith('.csv'):
+            # Read the CSV file
+            df = pd.read_csv(uploaded_file)
+            # Clean duplicate column names
+            df = clean_duplicate_columns(df)
+        else:
+            # Read Excel file
+            df = pd.read_excel(uploaded_file)
+            df = clean_duplicate_columns(df)
+        
+        return df
+        
+    except Exception as e:
+        st.error(f"❌ Error reading file: {str(e)}")
+        return None
+# =========================================
 
 # File uploader
 uploaded_file = st.sidebar.file_uploader("Upload your data (CSV/Excel)", type=["csv", "xlsx"])
@@ -563,3 +739,36 @@ else:
     st.dataframe(sample_data.head(10))
     
     st.info("Upload your data to begin the cleaning and analysis process.")
+
+    # ==================== DOWNLOAD SECTION ====================
+st.markdown("---")
+st.markdown('<h2 class="sub-header">💾 Download Cleaned Data</h2>', unsafe_allow_html=True)
+
+# Check if we have cleaned data available for download
+if st.session_state.cleaned_data is not None:
+    # Convert the cleaned dataframe to CSV format
+    cleaned_csv = st.session_state.cleaned_data.to_csv(index=False)
+    
+    # Create download button
+    st.download_button(
+        label="📥 Download Cleaned CSV",
+        data=cleaned_csv,
+        file_name="cleaned_data.csv",
+        mime="text/csv",
+        key="unique_download_button_key"
+    )
+    
+    # Show success message
+    st.success("✅ Your cleaned data is ready for download!")
+    
+    # Display file information
+    st.markdown('<div class="info-box">', unsafe_allow_html=True)
+    st.write("**Dataset Information:**")
+    st.write(f"• **Rows:** {st.session_state.cleaned_data.shape[0]}")
+    st.write(f"• **Columns:** {st.session_state.cleaned_data.shape[1]}")
+    st.write(f"• **Missing Values:** {st.session_state.cleaned_data.isnull().sum().sum()}")
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+else:
+    # Show warning if no cleaned data exists
+    st.warning("Please clean your data first to enable download.")
